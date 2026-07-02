@@ -102,7 +102,15 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("980x760")
+        self.geometry("1020x860")
+        self.minsize(880, 700)
+        try:
+            import sv_ttk
+            sv_ttk.set_theme("light")
+        except ImportError:
+            ttk.Style().theme_use("clam")
+        self.option_add("*Font", ("Segoe UI", 10))
+        self._style_texts = []
         self.stt = engine.SpeechToText(model_size="small")
         self.stt_live = engine.SpeechToText(model_size="base")  # schneller für Live
         self.translator = engine.Translator()
@@ -141,14 +149,29 @@ class App(tk.Tk):
             self.destroy()
 
     # ------------------------------------------------------------------ UI --
-    def _build_ui(self):
-        note = ttk.Notebook(self)
-        note.pack(fill="both", expand=True, padx=8, pady=8)
+    def _make_text(self, parent, height):
+        """Einheitlich gestaltetes Textfeld mit Rahmen."""
+        txt = tk.Text(parent, height=height, wrap="word", relief="flat",
+                      font=("Segoe UI", 10), padx=10, pady=8,
+                      background="#ffffff", highlightthickness=1,
+                      highlightbackground="#d0d4dc", highlightcolor="#0067c0")
+        return txt
 
-        self.tab_video = ttk.Frame(note)
-        self.tab_live = ttk.Frame(note)
-        note.add(self.tab_video, text="  Video / Datei  ")
-        note.add(self.tab_live, text="  Live: Gespräch & Anruf  ")
+    def _build_ui(self):
+        header = ttk.Frame(self)
+        header.pack(fill="x", padx=16, pady=(14, 4))
+        ttk.Label(header, text="🌐 Live-Übersetzer",
+                  font=("Segoe UI Semibold", 17)).pack(side="left")
+        ttk.Label(header, text="   lokal · offline · DSGVO-konform",
+                  font=("Segoe UI", 10), foreground="#6b7280").pack(side="left", pady=(6, 0))
+
+        note = ttk.Notebook(self)
+        note.pack(fill="both", expand=True, padx=12, pady=8)
+
+        self.tab_video = ttk.Frame(note, padding=10)
+        self.tab_live = ttk.Frame(note, padding=10)
+        note.add(self.tab_video, text="  🎬  Video / Datei  ")
+        note.add(self.tab_live, text="  🎙  Live: Gespräch & Anruf  ")
 
         self._build_video_tab()
         self._build_live_tab()
@@ -170,45 +193,54 @@ class App(tk.Tk):
     # ---------------------------------------------------------- Video-Tab --
     def _build_video_tab(self):
         f = self.tab_video
-        row = ttk.Frame(f); row.pack(fill="x", pady=8, padx=8)
-        ttk.Button(row, text="Videodatei wählen…", command=self._pick_video).pack(side="left")
+        row = ttk.Frame(f); row.pack(fill="x", pady=(4, 8))
+        ttk.Button(row, text="📂 Videodatei wählen…", command=self._pick_video).pack(side="left")
         self.video_path = tk.StringVar()
-        ttk.Label(row, textvariable=self.video_path).pack(side="left", padx=8)
+        ttk.Label(row, textvariable=self.video_path,
+                  foreground="#6b7280").pack(side="left", padx=10)
 
-        row2 = ttk.Frame(f); row2.pack(fill="x", pady=4, padx=8)
-        ttk.Label(row2, text="Zielsprache (automatisch aus Systemsprache):").pack(side="left")
+        row2 = ttk.Frame(f); row2.pack(fill="x", pady=(0, 8))
+        ttk.Label(row2, text="Zielsprache:").pack(side="left")
         self.video_tgt = tk.StringVar(value=system_language())
-        self._lang_combo(row2, self.video_tgt).pack(side="left", padx=6)
-        self.btn_video_go = ttk.Button(row2, text="Transkribieren + Übersetzen + Vertonen",
-                                       command=self._run_video)
-        self.btn_video_go.pack(side="left", padx=12)
+        self._lang_combo(row2, self.video_tgt).pack(side="left", padx=8)
+        ttk.Label(row2, text="(automatisch aus Systemsprache erkannt)",
+                  foreground="#6b7280").pack(side="left")
+        self.btn_video_go = ttk.Button(row2, text="① Transkribieren + Übersetzen",
+                                       style="Accent.TButton", command=self._run_video)
+        self.btn_video_go.pack(side="right")
 
-        ttk.Label(f, text="Transkript (Original):").pack(anchor="w", padx=8)
-        self.txt_orig = tk.Text(f, height=9, wrap="word")
-        self.txt_orig.pack(fill="both", expand=True, padx=8, pady=(0, 6))
-        ttk.Label(f, text="Übersetzung:").pack(anchor="w", padx=8)
-        self.txt_trans = tk.Text(f, height=9, wrap="word")
-        self.txt_trans.pack(fill="both", expand=True, padx=8, pady=(0, 6))
+        ttk.Label(f, text="Transkript (Original)",
+                  font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(4, 2))
+        self.txt_orig = self._make_text(f, 8)
+        self.txt_orig.pack(fill="both", expand=True, pady=(0, 8))
+        ttk.Label(f, text="Übersetzung",
+                  font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(0, 2))
+        self.txt_trans = self._make_text(f, 8)
+        self.txt_trans.pack(fill="both", expand=True, pady=(0, 6))
 
-        rowv = ttk.Frame(f); rowv.pack(fill="x", pady=(2, 0), padx=8)
+        rowv = ttk.Frame(f); rowv.pack(fill="x", pady=(2, 0))
         self.use_own_voice = tk.BooleanVar(value=True)
         ttk.Checkbutton(rowv, variable=self.use_own_voice,
                         text="Meine eigene Stimme verwenden (lokales Stimmprofil aus dem Video; "
                              "nur nicht-kommerzielle Nutzung)").pack(side="left")
 
-        row3 = ttk.Frame(f); row3.pack(fill="x", pady=6, padx=8)
-        ttk.Button(row3, text="Vertonung erzeugen", command=self._make_audio).pack(side="left")
-        ttk.Separator(row3, orient="vertical").pack(side="left", fill="y", padx=10)
-        ttk.Button(row3, text="⏪ 10 s", command=lambda: self.player.seek(-10)).pack(side="left")
-        self.btn_play = ttk.Button(row3, text="▶ Play", command=self._player_toggle)
-        self.btn_play.pack(side="left", padx=4)
-        ttk.Button(row3, text="⏹ Stopp", command=self._player_stop).pack(side="left")
-        ttk.Button(row3, text="10 s ⏩", command=lambda: self.player.seek(+10)).pack(side="left", padx=4)
+        row3 = ttk.Frame(f); row3.pack(fill="x", pady=8)
+        ttk.Button(row3, text="② Vertonung erzeugen", style="Accent.TButton",
+                   command=self._make_audio).pack(side="left")
+        ttk.Separator(row3, orient="vertical").pack(side="left", fill="y", padx=14)
+        ttk.Button(row3, text="⏪ 10 s", width=8,
+                   command=lambda: self.player.seek(-10)).pack(side="left", padx=2)
+        self.btn_play = ttk.Button(row3, text="▶ Play", width=9, command=self._player_toggle)
+        self.btn_play.pack(side="left", padx=2)
+        ttk.Button(row3, text="⏹ Stopp", width=9, command=self._player_stop).pack(side="left", padx=2)
+        ttk.Button(row3, text="10 s ⏩", width=8,
+                   command=lambda: self.player.seek(+10)).pack(side="left", padx=2)
         self.pos_label = tk.StringVar(value="0:00 / 0:00")
-        ttk.Label(row3, textvariable=self.pos_label, width=14).pack(side="left", padx=8)
+        ttk.Label(row3, textvariable=self.pos_label, width=13,
+                  foreground="#6b7280").pack(side="left", padx=8)
 
-        row4 = ttk.Frame(f); row4.pack(fill="x", pady=(0, 6), padx=8)
-        ttk.Button(row4, text="Video mit neuer Tonspur speichern…",
+        row4 = ttk.Frame(f); row4.pack(fill="x", pady=(0, 4))
+        ttk.Button(row4, text="③ 💾 Video mit neuer Tonspur speichern…", style="Accent.TButton",
                    command=self._save_video).pack(side="left")
         ttk.Button(row4, text="Als WAV speichern…", command=self._save_translation).pack(side="left", padx=8)
         ttk.Button(row4, text="Text speichern…", command=self._save_text).pack(side="left")
@@ -352,13 +384,14 @@ class App(tk.Tk):
     def _build_live_tab(self):
         f = self.tab_live
         info = ("Beide Richtungen laufen parallel: Ihre Stimme wird in die Partnersprache "
-                "übersetzt, der Systemton (Teams/Zoom/Video) zurück in Ihre Sprache.\n"
+                "übersetzt, der Systemton (Teams/Zoom/Video) zurück in Ihre Sprache. "
                 "Anruf-Modus: als 'Ausgabe an Partner' das virtuelle Kabel wählen und dieses "
-                "im Call als Mikrofon einstellen. Wichtig: Gesprächspartner müssen der "
-                "Verarbeitung zustimmen (§ 201 StGB).")
-        ttk.Label(f, text=info, wraplength=920, justify="left").pack(anchor="w", padx=8, pady=6)
+                "im Call als Mikrofon einstellen.")
+        ttk.Label(f, text=info, wraplength=940, justify="left",
+                  foreground="#6b7280").pack(anchor="w", pady=(2, 8))
 
-        grid = ttk.Frame(f); grid.pack(fill="x", padx=8)
+        grid = ttk.LabelFrame(f, text=" Sprachen & Audiogeräte ", padding=10)
+        grid.pack(fill="x")
 
         ttk.Label(grid, text="Meine Sprache:").grid(row=0, column=0, sticky="w", pady=3)
         self.live_my_lang = tk.StringVar(value=system_language())
@@ -368,11 +401,6 @@ class App(tk.Tk):
         self.live_their_lang = tk.StringVar(value="en")
         self._lang_combo(grid, self.live_their_lang).grid(row=0, column=3, sticky="w", padx=6)
 
-        ttk.Label(grid, text="Erkennung:").grid(row=0, column=4, sticky="w", padx=(20, 0))
-        self.cb_quality = ttk.Combobox(grid, state="readonly", width=18,
-                                       values=["base (schnell)", "small (genauer)"])
-        self.cb_quality.current(0)
-        self.cb_quality.grid(row=0, column=5, sticky="w", padx=6)
 
         ttk.Label(grid, text="Mein Mikrofon:").grid(row=1, column=0, sticky="w", pady=3)
         self.cb_mic = ttk.Combobox(grid, state="readonly", width=42)
@@ -390,17 +418,27 @@ class App(tk.Tk):
         self.cb_out_them = ttk.Combobox(grid, state="readonly", width=42)
         self.cb_out_them.grid(row=4, column=1, columnspan=3, sticky="w", padx=6)
 
-        row = ttk.Frame(f); row.pack(fill="x", padx=8, pady=8)
-        ttk.Button(row, text="Geräte aktualisieren", command=self._refresh_devices).pack(side="left")
-        self.btn_live = ttk.Button(row, text="▶ Live-Übersetzung starten", command=self._toggle_live)
-        self.btn_live.pack(side="left", padx=10)
-        ttk.Label(row, text="Mikrofon-Pegel:").pack(side="left", padx=(20, 4))
-        self.level_bar = ttk.Progressbar(row, length=160, maximum=0.2)
-        self.level_bar.pack(side="left")
+        row = ttk.Frame(f); row.pack(fill="x", pady=10)
+        self.btn_live = ttk.Button(row, text="▶  Live-Übersetzung starten",
+                                   style="Accent.TButton", command=self._toggle_live)
+        self.btn_live.pack(side="left")
+        ttk.Button(row, text="🔄 Geräte aktualisieren",
+                   command=self._refresh_devices).pack(side="left", padx=10)
+        ttk.Label(row, text="Erkennung:").pack(side="left", padx=(14, 4))
+        self.cb_quality = ttk.Combobox(row, state="readonly", width=15,
+                                       values=["base (schnell)", "small (genauer)"])
+        self.cb_quality.current(0)
+        self.cb_quality.pack(side="left")
+        ttk.Label(row, text="Mikrofon-Pegel:").pack(side="left", padx=(20, 6))
+        self.level_bar = ttk.Progressbar(row, length=180, maximum=0.2)
+        self.level_bar.pack(side="left", pady=2)
 
-        ttk.Label(f, text="Protokoll:").pack(anchor="w", padx=8)
-        self.txt_log = tk.Text(f, height=16, wrap="word", state="disabled")
-        self.txt_log.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        ttk.Label(f, text="Protokoll",
+                  font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(4, 2))
+        self.txt_log = self._make_text(f, 14)
+        self.txt_log.config(state="disabled", background="#f8f9fb",
+                            font=("Consolas", 9))
+        self.txt_log.pack(fill="both", expand=True, pady=(0, 4))
 
         self._refresh_devices()
 
@@ -563,5 +601,15 @@ class App(tk.Tk):
         self.after(0, do)
 
 
+def _enable_dpi_awareness():
+    """Scharfe Darstellung auf skalierten Windows-Displays."""
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
+    _enable_dpi_awareness()
     App().mainloop()

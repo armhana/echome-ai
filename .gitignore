@@ -16,3 +16,4 @@ app/*.wav
 app/*.mp4
 app/*.log
 app/output_err.txt
+app/*.png
