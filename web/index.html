@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<title>Live-Übersetzer</title>
+<style>
+  :root { --accent:#2563eb; --bg:#f5f7fb; --card:#fff; --line:#dde3ee; --mut:#6b7280; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg);
+         margin:0; padding:16px; color:#1f2937; }
+  .wrap { max-width:560px; margin:0 auto; }
+  h1 { font-size:1.35rem; margin:8px 0 2px; }
+  .sub { color:var(--mut); font-size:.85rem; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:16px; margin-bottom:14px; }
+  .card h2 { font-size:.95rem; margin:0 0 10px; }
+  button { background:var(--accent); color:#fff; border:none; border-radius:10px;
+           padding:12px 18px; font-size:1rem; width:100%; cursor:pointer; }
+  button:disabled { background:#b9c2d0; }
+  button.klein { width:auto; padding:10px 14px; font-size:.9rem; }
+  button.grau { background:#e5e7eb; color:#1f2937; }
+  select, input[type=file] { width:100%; padding:10px; border:1px solid var(--line);
+           border-radius:10px; font-size:1rem; background:#fff; }
+  label.check { display:flex; gap:10px; align-items:flex-start; font-size:.9rem; }
+  .status { font-size:.9rem; color:var(--mut); min-height:1.3em; margin-top:8px; }
+  .fehler { color:#b91c1c; }
+  .box { background:#f8f9fb; border-radius:10px; padding:10px; font-size:.88rem;
+         white-space:pre-wrap; max-height:160px; overflow:auto; }
+  .player { display:flex; gap:8px; margin-top:10px; }
+  .player button { flex:1; }
+  a.dl { display:block; text-align:center; background:#16a34a; color:#fff;
+         text-decoration:none; padding:12px; border-radius:10px; margin-top:8px; }
+  #consent { position:fixed; inset:0; background:rgba(15,23,42,.55); display:flex;
+             align-items:center; justify-content:center; padding:16px; z-index:9; }
+  #consent .card { max-width:460px; max-height:85vh; overflow:auto; }
+  .hidden { display:none !important; }
+  progress { width:100%; height:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌐 Live-Übersetzer</h1>
+  <div class="sub">lokal · im eigenen WLAN · DSGVO-konform</div>
+
+  <div class="card">
+    <h2>1 · Video hochladen</h2>
+    <input type="file" id="video" accept="video/*">
+  </div>
+
+  <div class="card">
+    <h2>2 · Zielsprache</h2>
+    <select id="sprache"></select>
+    <div class="status" id="spracheInfo"></div>
+    <label class="check" style="margin-top:10px;">
+      <input type="checkbox" id="eigeneStimme" checked>
+      <span>Meine eigene Stimme verwenden (Stimmprofil aus dem Video;
+      nur nicht-kommerzielle Nutzung; Erzeugung dauert einige Minuten)</span>
+    </label>
+  </div>
+
+  <div class="card">
+    <button id="los">Übersetzen</button>
+    <div class="status" id="status"></div>
+    <progress id="prog" class="hidden"></progress>
+  </div>
+
+  <div class="card hidden" id="ergebnis">
+    <h2>Ergebnis</h2>
+    <div class="box" id="uebersetzung"></div>
+    <audio id="audio" preload="auto"></audio>
+    <div class="player">
+      <button class="grau" onclick="spule(-10)">⏪ 10 s</button>
+      <button id="playbtn" onclick="playPause()">▶ Play</button>
+      <button class="grau" onclick="stopp()">⏹</button>
+      <button class="grau" onclick="spule(10)">10 s ⏩</button>
+    </div>
+    <a class="dl" id="dlVideo" href="#">🎬 Video mit neuer Tonspur laden</a>
+    <a class="dl" id="dlAudio" href="#" style="background:#0891b2;">🔊 Nur Audio (WAV) laden</a>
+  </div>
+</div>
+
+<div id="consent">
+  <div class="card">
+    <h2>Einwilligung erforderlich</h2>
+    <p style="font-size:.88rem;">Diese Anwendung verarbeitet Ihre Videos, Transkripte,
+    Übersetzungen und Sprachausgaben ausschließlich <b>lokal auf Ihrem eigenen PC</b>
+    im Heim-/Firmennetz. Es werden keine Inhalte an Dritte übertragen. Bei aktivierter
+    Funktion „Eigene Stimme" wird ein Stimmprofil aus Ihrem Video erzeugt und nach der
+    Verarbeitung nur auf Ihrem PC gespeichert. (Art. 6 Abs. 1 lit. a DSGVO — jederzeit
+    widerrufbar durch Löschen der App-Daten.)</p>
+    <button onclick="zustimmen()">Ich stimme zu</button>
+    <button class="grau" style="margin-top:8px;" onclick="ablehnen()">Ablehnen</button>
+  </div>
+</div>
+
+<script>
+const SPRACHEN = [["de","Deutsch"],["en","Englisch"],["fr","Französisch"],
+  ["es","Spanisch"],["it","Italienisch"],["pt","Portugiesisch"],["nl","Niederländisch"],
+  ["pl","Polnisch"],["ru","Russisch"],["tr","Türkisch"],["zh","Chinesisch"]];
+
+// Einwilligung
+if (localStorage.getItem("einwilligung") === "ja")
+  document.getElementById("consent").classList.add("hidden");
+function zustimmen(){ localStorage.setItem("einwilligung","ja");
+  document.getElementById("consent").classList.add("hidden"); }
+function ablehnen(){ document.body.innerHTML =
+  "<p style='padding:24px;font-family:sans-serif;'>Ohne Einwilligung kann die App nicht genutzt werden.</p>"; }
+
+// Zielsprache automatisch aus der Geräte-/Browsersprache
+const sel = document.getElementById("sprache");
+SPRACHEN.forEach(([c,n]) => sel.add(new Option(`${n} (${c})`, c)));
+const geraet = (navigator.language || "en").split("-")[0];
+sel.value = SPRACHEN.some(([c]) => c === geraet) ? geraet : "en";
+document.getElementById("spracheInfo").textContent =
+  `Automatisch erkannt: ${navigator.language}`;
+
+const statusEl = document.getElementById("status");
+const audio = document.getElementById("audio");
+
+document.getElementById("los").onclick = async () => {
+  const datei = document.getElementById("video").files[0];
+  if (!datei) { statusEl.textContent = "Bitte zuerst ein Video wählen."; return; }
+  const fd = new FormData();
+  fd.append("video", datei);
+  fd.append("zielsprache", sel.value);
+  fd.append("eigene_stimme", document.getElementById("eigeneStimme").checked);
+  document.getElementById("los").disabled = true;
+  document.getElementById("prog").classList.remove("hidden");
+  statusEl.className = "status";
+  statusEl.textContent = "Lade Video hoch…";
+  try {
+    const res = await fetch("/api/auftrag", { method:"POST", body:fd });
+    const { job_id } = await res.json();
+    await warte(job_id);
+  } catch (e) {
+    statusEl.textContent = "Fehler: " + e.message;
+    statusEl.className = "status fehler";
+  } finally {
+    document.getElementById("los").disabled = false;
+    document.getElementById("prog").classList.add("hidden");
+  }
+};
+
+async function warte(id){
+  for(;;){
+    const j = await (await fetch(`/api/status/${id}`)).json();
+    statusEl.textContent = j.schritt || j.status;
+    if (j.status === "fertig"){
+      document.getElementById("uebersetzung").textContent = j.uebersetzung;
+      audio.src = `/api/audio/${id}`;
+      document.getElementById("dlVideo").href = `/api/video/${id}`;
+      document.getElementById("dlAudio").href = `/api/audio/${id}`;
+      document.getElementById("ergebnis").classList.remove("hidden");
+      statusEl.textContent = "Fertig.";
+      return;
+    }
+    if (j.status === "fehler"){
+      statusEl.textContent = "Fehler: " + j.fehler;
+      statusEl.className = "status fehler";
+      return;
+    }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
+function playPause(){
+  const b = document.getElementById("playbtn");
+  if (audio.paused){ audio.play(); b.textContent = "⏸ Pause"; }
+  else { audio.pause(); b.textContent = "▶ Play"; }
+}
+function stopp(){ audio.pause(); audio.currentTime = 0;
+  document.getElementById("playbtn").textContent = "▶ Play"; }
+function spule(s){ audio.currentTime = Math.max(0, audio.currentTime + s); }
+audio.addEventListener("ended", () =>
+  document.getElementById("playbtn").textContent = "▶ Play");
+</script>
+</body>
+</html>
