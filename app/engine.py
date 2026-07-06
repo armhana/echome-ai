@@ -286,16 +286,42 @@ def extract_voice_sample(media_path, out_wav, max_seconds=25):
     return out_wav
 
 
+def _ffmpeg_exe():
+    import shutil
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+    return exe
+
+
+# Entrauschen -> nachschaerfen -> Farben/Kontrast auffrischen -> falls unter
+# 720p: sanft auf max. 1080p-Breite hochskalieren (Lanczos).
+ENHANCE_FILTER = (
+    "hqdn3d=1.5:1.5:6:6,"
+    "unsharp=5:5:0.8:5:5:0.4,"
+    "eq=contrast=1.06:brightness=0.02:saturation=1.12,"
+    "scale=w='if(lt(ih,720),min(1920,iw*2),iw)':h=-2:flags=lanczos"
+)
+
+
+def enhance_video(video_path, out_path):
+    """Bildverbesserung (Ton bleibt unveraendert erhalten)."""
+    import subprocess
+    cmd = [_ffmpeg_exe(), "-y", "-i", video_path,
+           "-vf", ENHANCE_FILTER,
+           "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+           "-c:a", "copy", out_path]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"ffmpeg-Fehler (Bildverbesserung): {result.stderr[-400:]}")
+    return out_path
+
+
 def mux_video_with_audio(video_path, audio_wav, out_path):
     """Originalvideo (Bild unveraendert) mit neuer Tonspur als MP4 speichern."""
-    import shutil
     import subprocess
-    # System-ffmpeg bevorzugen (Raspberry Pi/Linux), sonst mitgeliefertes Binary
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        import imageio_ffmpeg
-        ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
-    cmd = [ffmpeg, "-y", "-i", video_path, "-i", audio_wav,
+    cmd = [_ffmpeg_exe(), "-y", "-i", video_path, "-i", audio_wav,
            "-map", "0:v", "-map", "1:a", "-c:v", "copy",
            "-c:a", "aac", "-shortest", out_path]
     result = subprocess.run(cmd, capture_output=True, text=True)

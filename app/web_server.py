@@ -34,9 +34,17 @@ clone = engine.VoiceCloneTTS()
 jobs = {}  # id -> {status, schritt, transkript, uebersetzung, fehler}
 
 
-def _verarbeite(job_id, video_path, ziel, eigene_stimme, quell=None):
+def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
+                quell=None):
     job = jobs[job_id]
     try:
+        if bild_verbessern:
+            job["schritt"] = "Verbessere Bild (entrauschen, schärfen, Farben)…"
+            besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
+            engine.enhance_video(video_path, besser)
+            video_quelle_fuer_bild = besser
+        else:
+            video_quelle_fuer_bild = video_path
         job["schritt"] = "Transkribiere (Whisper)…"
         text, quelle = stt.transcribe_file(video_path, language=quell)
         job["transkript"] = text
@@ -62,7 +70,7 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, quell=None):
 
         job["schritt"] = "Baue Video mit neuer Tonspur…"
         video_out = os.path.join(JOBS_DIR, f"{job_id}.mp4")
-        engine.mux_video_with_audio(video_path, audio_path, video_out)
+        engine.mux_video_with_audio(video_quelle_fuer_bild, audio_path, video_out)
 
         job["status"] = "fertig"
         job["schritt"] = "Fertig."
@@ -73,7 +81,8 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, quell=None):
 
 @app.post("/api/auftrag")
 async def auftrag(video: UploadFile, zielsprache: str = Form(...),
-                  eigene_stimme: bool = Form(False)):
+                  eigene_stimme: bool = Form(False),
+                  bild_verbessern: bool = Form(False)):
     job_id = uuid.uuid4().hex[:12]
     video_path = os.path.join(JOBS_DIR, f"{job_id}_eingabe.mp4")
     with open(video_path, "wb") as fh:
@@ -81,7 +90,8 @@ async def auftrag(video: UploadFile, zielsprache: str = Form(...),
     jobs[job_id] = {"status": "laeuft", "schritt": "In Warteschlange…",
                     "transkript": "", "uebersetzung": "", "fehler": ""}
     threading.Thread(target=_verarbeite,
-                     args=(job_id, video_path, zielsprache, eigene_stimme),
+                     args=(job_id, video_path, zielsprache, eigene_stimme,
+                           bild_verbessern),
                      daemon=True).start()
     return {"job_id": job_id}
 

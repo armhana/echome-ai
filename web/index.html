@@ -59,6 +59,11 @@
       <span>Meine eigene Stimme verwenden (Stimmprofil aus dem Video;
       nur nicht-kommerzielle Nutzung; Erzeugung dauert einige Minuten)</span>
     </label>
+    <label class="check" style="margin-top:10px;">
+      <input type="checkbox" id="bildVerbessern">
+      <span>Bild verbessern (entrauschen, schärfen, Farben auffrischen,
+      kleine Auflösungen hochskalieren)</span>
+    </label>
   </div>
 
   <div class="card">
@@ -132,6 +137,7 @@ document.getElementById("los").onclick = async () => {
   fd.append("video", datei);
   fd.append("zielsprache", sel.value);
   fd.append("eigene_stimme", document.getElementById("eigeneStimme").checked);
+  fd.append("bild_verbessern", document.getElementById("bildVerbessern").checked);
   document.getElementById("los").disabled = true;
   document.getElementById("prog").classList.remove("hidden");
   statusEl.className = "status";
