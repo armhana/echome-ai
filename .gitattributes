@@ -1,0 +1,4 @@
+# Shell-Skripte brauchen Unix-Zeilenenden (sonst Fehler auf dem Raspberry Pi),
+# Batch-Dateien brauchen Windows-Zeilenenden.
+*.sh  text eol=lf
+*.bat text eol=crlf
