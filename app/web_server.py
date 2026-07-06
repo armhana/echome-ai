@@ -120,10 +120,59 @@ async def auftrag(video: UploadFile, zielsprache: str = Form(...),
     with open(video_path, "wb") as fh:
         shutil.copyfileobj(video.file, fh)
     jobs[job_id] = {"status": "laeuft", "schritt": "In Warteschlange…",
-                    "transkript": "", "uebersetzung": "", "fehler": ""}
+                    "transkript": "", "uebersetzung": "", "fehler": "",
+                    "_video": video_path, "_ziel": zielsprache,
+                    "_eigene_stimme": eigene_stimme}
     threading.Thread(target=_verarbeite,
                      args=(job_id, video_path, zielsprache, eigene_stimme,
                            bild_verbessern),
+                     daemon=True).start()
+    return {"job_id": job_id}
+
+
+def _neu_vertonen(job_id, text):
+    """Korrigierten Text neu vertonen und Video neu bauen (Video/Stimmprofil
+    werden wiederverwendet — deutlich schneller als ein kompletter Durchlauf)."""
+    job = jobs[job_id]
+    try:
+        ziel = job["_ziel"]
+        profil = os.path.join(JOBS_DIR, f"{job_id}_profil.wav")
+        if job["_eigene_stimme"] and clone.available():
+            if not os.path.exists(profil):
+                job["schritt"] = "Erzeuge Stimmprofil…"
+                engine.extract_voice_sample(job["_video"], profil)
+            job["schritt"] = "Spreche korrigierten Text in eigener Stimme…"
+            xtts_lang = {"zh": "zh-cn"}.get(ziel, ziel)
+            wav, rate = clone.synthesize(text, xtts_lang, profil)
+        else:
+            job["schritt"] = "Spreche korrigierten Text (neutrale Stimme)…"
+            wav, rate = tts.synthesize(text, ziel)
+        audio_path = os.path.join(JOBS_DIR, f"{job_id}.wav")
+        engine.save_wav(audio_path, wav, rate)
+
+        job["schritt"] = "Baue Video neu…"
+        besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
+        quelle = besser if os.path.exists(besser) else job["_video"]
+        engine.mux_video_with_audio(quelle, audio_path,
+                                    os.path.join(JOBS_DIR, f"{job_id}.mp4"))
+        job["uebersetzung"] = text
+        job["status"] = "fertig"
+        job["schritt"] = "Fertig (mit Korrektur neu vertont)."
+    except Exception as e:
+        job["status"] = "fehler"
+        job["fehler"] = str(e)
+
+
+@app.post("/api/neu_vertonen/{job_id}")
+async def neu_vertonen(job_id: str, text: str = Form(...)):
+    job = jobs.get(job_id)
+    if not job or not job.get("_video"):
+        return JSONResponse({"fehler": "Auftrag unbekannt"}, status_code=404)
+    if not text.strip():
+        return JSONResponse({"fehler": "Text ist leer"}, status_code=400)
+    job["status"] = "laeuft"
+    job["schritt"] = "Neu vertonen…"
+    threading.Thread(target=_neu_vertonen, args=(job_id, text.strip()),
                      daemon=True).start()
     return {"job_id": job_id}
 
@@ -133,7 +182,7 @@ def status(job_id: str):
     job = jobs.get(job_id)
     if not job:
         return JSONResponse({"status": "unbekannt"}, status_code=404)
-    return job
+    return {k: v for k, v in job.items() if not k.startswith("_")}
 
 
 @app.get("/api/audio/{job_id}")

@@ -74,7 +74,13 @@
 
   <div class="card hidden" id="ergebnis">
     <h2>Ergebnis</h2>
-    <div class="box" id="uebersetzung"></div>
+    <p style="font-size:.82rem;color:var(--mut);margin:0 0 6px;">
+      Falsch erkannte Wörter? Text hier korrigieren und neu vertonen:</p>
+    <textarea id="uebersetzung" rows="5" style="width:100%;padding:10px;
+      border:1px solid var(--line);border-radius:10px;font-size:.92rem;
+      font-family:inherit;resize:vertical;"></textarea>
+    <button id="neuVertonen" class="klein" style="margin-top:8px;">
+      🔁 Mit Korrektur neu vertonen</button>
     <audio id="audio" preload="auto"></audio>
     <div class="player">
       <button class="grau" onclick="spule(-10)">⏪ 10 s</button>
@@ -155,17 +161,23 @@ document.getElementById("los").onclick = async () => {
   }
 };
 
+let aktuellerJob = null;
+
 async function warte(id){
+  aktuellerJob = id;
   for(;;){
     const j = await (await fetch(`/api/status/${id}`)).json();
     statusEl.textContent = j.schritt || j.status;
     if (j.status === "fertig"){
-      document.getElementById("uebersetzung").textContent = j.uebersetzung;
-      audio.src = `/api/audio/${id}`;
-      document.getElementById("dlVideo").href = `/api/video/${id}`;
-      document.getElementById("dlAudio").href = `/api/audio/${id}`;
+      // Cache-Busting: nach Neu-Vertonung frische Dateien laden
+      const v = Date.now();
+      document.getElementById("uebersetzung").value = j.uebersetzung;
+      audio.src = `/api/audio/${id}?v=${v}`;
+      document.getElementById("dlVideo").href = `/api/video/${id}?v=${v}`;
+      document.getElementById("dlAudio").href = `/api/audio/${id}?v=${v}`;
       document.getElementById("ergebnis").classList.remove("hidden");
-      statusEl.textContent = "Fertig.";
+      stopp();
+      statusEl.textContent = j.schritt || "Fertig.";
       return;
     }
     if (j.status === "fehler"){
@@ -176,6 +188,25 @@ async function warte(id){
     await new Promise(r => setTimeout(r, 1500));
   }
 }
+
+document.getElementById("neuVertonen").onclick = async () => {
+  const text = document.getElementById("uebersetzung").value.trim();
+  if (!aktuellerJob || !text) return;
+  const fd = new FormData();
+  fd.append("text", text);
+  statusEl.className = "status";
+  statusEl.textContent = "Vertone korrigierten Text…";
+  document.getElementById("neuVertonen").disabled = true;
+  try {
+    await fetch(`/api/neu_vertonen/${aktuellerJob}`, { method:"POST", body:fd });
+    await warte(aktuellerJob);
+  } catch (e) {
+    statusEl.textContent = "Fehler: " + e.message;
+    statusEl.className = "status fehler";
+  } finally {
+    document.getElementById("neuVertonen").disabled = false;
+  }
+};
 
 function playPause(){
   const b = document.getElementById("playbtn");
