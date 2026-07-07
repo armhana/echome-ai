@@ -245,7 +245,7 @@ class App(tk.Tk):
                   foreground="#6b7280").pack(side="left", padx=8)
 
         ttk.Label(row3, text="🔊 Ausgabe:").pack(side="left", padx=(10, 4))
-        self.cb_video_out = ttk.Combobox(row3, state="readonly", width=30)
+        self.cb_video_out = ttk.Combobox(row3, state="readonly", width=44)
         self._video_outputs = audio_mod.list_output_devices()
         self.cb_video_out["values"] = [f"{i}: {n}" for i, n in self._video_outputs]
         try:

@@ -31,20 +31,43 @@ def _playback_end():
             PLAYBACK_ACTIVE.clear()
 
 
+def _wasapi_hostapi():
+    """Index der WASAPI-Schnittstelle: volle Geraetenamen (MME kappt nach
+    31 Zeichen) und keine Mehrfach-Eintraege pro Geraet."""
+    try:
+        for i, api in enumerate(sd.query_hostapis()):
+            if "WASAPI" in api["name"].upper():
+                return i
+    except Exception:
+        pass
+    return None
+
+
+def _wasapi_settings():
+    """Auto-Resampling fuer WASAPI-Geraete (die sonst nur ihre native
+    Abtastrate akzeptieren)."""
+    try:
+        return sd.WasapiSettings(auto_convert=True)
+    except Exception:
+        return None
+
+
 def list_input_devices():
     """[(index, name)] aller Aufnahmegeraete."""
+    was = _wasapi_hostapi()
     devices = []
     for i, d in enumerate(sd.query_devices()):
-        if d["max_input_channels"] > 0:
+        if d["max_input_channels"] > 0 and (was is None or d["hostapi"] == was):
             devices.append((i, d["name"]))
     return devices
 
 
 def list_output_devices():
     """[(index, name)] aller Wiedergabegeraete."""
+    was = _wasapi_hostapi()
     devices = []
     for i, d in enumerate(sd.query_devices()):
-        if d["max_output_channels"] > 0:
+        if d["max_output_channels"] > 0 and (was is None or d["hostapi"] == was):
             devices.append((i, d["name"]))
     return devices
 
@@ -147,7 +170,8 @@ class UtteranceRecorder:
 
         with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="float32",
                             device=self.device_index, blocksize=blocksize,
-                            callback=callback):
+                            callback=callback,
+                            extra_settings=_wasapi_settings()):
             self._segment_loop(read_block)
 
     def _run_loopback(self):
@@ -224,7 +248,8 @@ class SeekablePlayer:
                         self.playing = False
             self._stream = sd.OutputStream(samplerate=self.rate, channels=1,
                                            dtype="float32", callback=callback,
-                                           device=self.device_index)
+                                           device=self.device_index,
+                                           extra_settings=_wasapi_settings())
             self._stream.start()
 
     def play(self):
@@ -284,7 +309,8 @@ class Player:
             audio, rate = item
             _playback_begin()
             try:
-                sd.play(audio, rate, device=self.device_index, blocking=True)
+                sd.play(audio, rate, device=self.device_index, blocking=True,
+                        extra_settings=_wasapi_settings())
             except Exception:
                 pass
             finally:
