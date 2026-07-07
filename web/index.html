@@ -143,7 +143,12 @@ const audio = document.getElementById("audio");
 
 document.getElementById("los").onclick = async () => {
   const datei = document.getElementById("video").files[0];
-  if (!datei) { statusEl.textContent = "Bitte zuerst ein Video wählen."; return; }
+  if (!datei) {
+    statusEl.textContent = "⚠️ Bitte zuerst oben ein Video auswählen (Schritt 1).";
+    statusEl.className = "status fehler";
+    document.getElementById("video").scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   const fd = new FormData();
   fd.append("video", datei);
   fd.append("zielsprache", sel.value);
