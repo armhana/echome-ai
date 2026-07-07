@@ -64,11 +64,14 @@
       bei langen Videos bis zu 1 Stunde; die Seite darf währenddessen
       geschlossen werden, das Ergebnis wartet hier.</span>
     </label>
-    <label class="check" style="margin-top:10px;">
-      <input type="checkbox" id="bildVerbessern">
-      <span>Bild verbessern (entrauschen, schärfen, Farben auffrischen,
-      kleine Auflösungen hochskalieren)</span>
-    </label>
+    <div style="margin-top:10px;">
+      <label for="bildVerbessern" style="font-size:.9rem;">Bild verbessern:</label>
+      <select id="bildVerbessern" style="margin-top:4px;">
+        <option value="aus">Aus — Bild unverändert lassen</option>
+        <option value="dezent">Dezent — entrauschen, schärfen, Farben auffrischen</option>
+        <option value="beauty">Beauty — weichere Haut, wärmere Farben, mehr Leuchtkraft</option>
+      </select>
+    </div>
   </div>
 
   <div class="card">
@@ -156,7 +159,7 @@ document.getElementById("los").onclick = async () => {
   fd.append("video", datei);
   fd.append("zielsprache", sel.value);
   fd.append("eigene_stimme", document.getElementById("eigeneStimme").checked);
-  fd.append("bild_verbessern", document.getElementById("bildVerbessern").checked);
+  fd.append("bild_verbessern", document.getElementById("bildVerbessern").value);
   document.getElementById("los").disabled = true;
   document.getElementById("prog").classList.remove("hidden");
   statusEl.className = "status";

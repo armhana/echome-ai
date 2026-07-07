@@ -96,7 +96,7 @@ def _warmup():
 threading.Thread(target=_warmup, daemon=True).start()
 
 
-def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
+def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_stufe="aus",
                 quell=None):
     job = jobs[job_id]
     try:
@@ -109,12 +109,12 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
         video_quelle_fuer_bild = video_path
         enhance_fehler = []
         enhance_thread = None
-        if bild_verbessern and hat_video:
+        if bild_stufe in ("dezent", "beauty") and hat_video:
             besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
 
             def _enhance():
                 try:
-                    engine.enhance_video(video_path, besser)
+                    engine.enhance_video(video_path, besser, stufe=bild_stufe)
                 except Exception as e:
                     enhance_fehler.append(e)
 
@@ -167,7 +167,10 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
 @app.post("/api/auftrag")
 async def auftrag(video: UploadFile, zielsprache: str = Form(...),
                   eigene_stimme: bool = Form(False),
-                  bild_verbessern: bool = Form(False)):
+                  bild_verbessern: str = Form("aus")):
+    # Stufen: aus | dezent | beauty ("true" alter Clients = dezent)
+    bild_stufe = {"true": "dezent", "false": "aus"}.get(
+        bild_verbessern.lower(), bild_verbessern.lower())
     job_id = uuid.uuid4().hex[:12]
     video_path = os.path.join(JOBS_DIR, f"{job_id}_eingabe.mp4")
     with open(video_path, "wb") as fh:
@@ -179,7 +182,7 @@ async def auftrag(video: UploadFile, zielsprache: str = Form(...),
     _speichere_job(job_id)
     threading.Thread(target=_verarbeite,
                      args=(job_id, video_path, zielsprache, eigene_stimme,
-                           bild_verbessern),
+                           bild_stufe),
                      daemon=True).start()
     return {"job_id": job_id}
 

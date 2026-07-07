@@ -337,21 +337,33 @@ def _ffmpeg_exe():
     return exe
 
 
-# Entrauschen -> nachschaerfen -> Farben/Kontrast auffrischen -> falls unter
-# 720p: sanft auf max. 1080p-Breite hochskalieren (Lanczos).
-ENHANCE_FILTER = (
-    "hqdn3d=1.5:1.5:6:6,"
-    "unsharp=5:5:0.8:5:5:0.4,"
-    "eq=contrast=1.06:brightness=0.02:saturation=1.12,"
-    "scale=w='if(lt(ih,720),min(1920,iw*2),iw)':h=-2:flags=lanczos"
-)
+# Bildverbesserungs-Stufen. Gemeinsam: falls unter 720p, sanft auf max.
+# 1080p-Breite hochskalieren (Lanczos).
+_SCALE = "scale=w='if(lt(ih,720),min(1920,iw*2),iw)':h=-2:flags=lanczos"
+
+ENHANCE_FILTERS = {
+    # dezent: entrauschen, nachschaerfen, Farben/Kontrast auffrischen
+    "dezent": (
+        "hqdn3d=1.5:1.5:6:6,"
+        "unsharp=5:5:0.8:5:5:0.4,"
+        "eq=contrast=1.06:brightness=0.02:saturation=1.12," + _SCALE
+    ),
+    # beauty: staerkeres Entrauschen wirkt als Haut-Weichzeichner, dazu
+    # waermere Farben, mehr Leuchtkraft und nur milde Schaerfung
+    "beauty": (
+        "hqdn3d=4:3:9:6,"
+        "unsharp=5:5:0.5,"
+        "eq=contrast=1.05:brightness=0.035:saturation=1.16:gamma=1.04,"
+        "colorbalance=rs=.03:bs=-.03," + _SCALE
+    ),
+}
 
 
-def enhance_video(video_path, out_path):
+def enhance_video(video_path, out_path, stufe="dezent"):
     """Bildverbesserung (Ton bleibt unveraendert erhalten)."""
     import subprocess
     cmd = [_ffmpeg_exe(), "-y", "-i", video_path,
-           "-vf", ENHANCE_FILTER,
+           "-vf", ENHANCE_FILTERS.get(stufe, ENHANCE_FILTERS["dezent"]),
            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
            "-c:a", "copy", out_path]
     result = subprocess.run(cmd, capture_output=True, text=True)
