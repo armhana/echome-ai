@@ -100,7 +100,8 @@
       <button class="grau" onclick="spule(10)">10 s ⏩</button>
     </div>
     <a class="dl" id="dlVideo" href="#">🎬 Video mit neuer Tonspur laden</a>
-    <a class="dl" id="dlAudio" href="#" style="background:#0891b2;">🔊 Nur Audio (WAV) laden</a>
+    <a class="dl" id="dlMp3" href="#" style="background:#0891b2;">🎵 Audio als MP3 laden</a>
+    <a class="dl" id="dlAudio" href="#" style="background:#64748b;">🔊 Audio als WAV laden</a>
   </div>
 </div>
 
@@ -231,6 +232,7 @@ async function warte(id, fortgesetzt){
       // Reine Audiodatei hochgeladen? Dann gibt es kein Video zum Laden.
       document.getElementById("dlVideo").classList.toggle("hidden", j.hat_video === false);
       audio.src = `/api/audio/${id}?v=${v}`;
+      document.getElementById("dlMp3").href = `/api/mp3/${id}?v=${v}`;
       if (startAnteil !== null) {
         // Nach Korrektur: an der Cursorstelle fortsetzen (2 s Vorlauf)
         const anteil = startAnteil; startAnteil = null;

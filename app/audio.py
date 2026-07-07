@@ -246,11 +246,26 @@ class SeekablePlayer:
                     self.pos = end
                     if self.pos >= len(self.audio):
                         self.playing = False
-            self._stream = sd.OutputStream(samplerate=self.rate, channels=1,
-                                           dtype="float32", callback=callback,
-                                           device=self.device_index,
-                                           extra_settings=_wasapi_settings())
-            self._stream.start()
+
+            # Fallback-Kaskade: WASAPI -> ohne Extra-Einstellungen ->
+            # Standardgeraet. Scheitert alles, fliegt ein klarer Fehler
+            # (frueher scheiterte das stumm und man hoerte einfach nichts).
+            versuche = [
+                {"device": self.device_index, "extra_settings": _wasapi_settings()},
+                {"device": self.device_index, "extra_settings": None},
+                {"device": None, "extra_settings": None},
+            ]
+            letzter_fehler = None
+            for v in versuche:
+                try:
+                    stream = sd.OutputStream(samplerate=self.rate, channels=1,
+                                             dtype="float32", callback=callback, **v)
+                    stream.start()
+                    self._stream = stream
+                    return
+                except Exception as e:
+                    letzter_fehler = e
+            raise RuntimeError(f"Kein Audiogerät nutzbar: {letzter_fehler}")
 
     def play(self):
         if not len(self.audio):
@@ -282,6 +297,26 @@ class SeekablePlayer:
         """(aktuelle Sekunde, Gesamtsekunden)"""
         with self._lock:
             return self.pos / self.rate, len(self.audio) / self.rate
+
+
+def spiele_testton(device_index=None):
+    """0,8 s Piepton auf das Geraet — prueft den Tonweg unabhaengig von der KI.
+    Gibt zurueck, wie abgespielt wurde; wirft einen Fehler, wenn gar nichts geht."""
+    t = np.linspace(0, 0.8, int(48000 * 0.8), dtype=np.float32)
+    ton = (0.4 * np.sin(2 * np.pi * 440 * t) * np.minimum(1, 10 * (0.8 - t))).astype(np.float32)
+    versuche = [
+        ("gewähltes Gerät (WASAPI)", {"device": device_index, "extra_settings": _wasapi_settings()}),
+        ("gewähltes Gerät", {"device": device_index, "extra_settings": None}),
+        ("Windows-Standardgerät", {"device": None, "extra_settings": None}),
+    ]
+    letzter_fehler = None
+    for name, v in versuche:
+        try:
+            sd.play(ton, 48000, blocking=True, **v)
+            return name
+        except Exception as e:
+            letzter_fehler = e
+    raise RuntimeError(f"Testton fehlgeschlagen: {letzter_fehler}")
 
 
 class Player:

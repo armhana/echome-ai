@@ -57,6 +57,7 @@ class SpeechToText:
         self.model_size = model_size
         self.beam_size = beam_size
         self._model = None
+        self._batched = None
         self._lock = threading.RLock()
 
     def _ensure_model(self):
@@ -97,7 +98,17 @@ class SpeechToText:
 
     def _transcribe_file_impl(self, path, language, on_segment):
         model = self._ensure_model()
-        segments, info = model.transcribe(path, language=language, vad_filter=True)
+        # Batch-Inferenz ist bei Dateien deutlich schneller (fuellt die CPU
+        # mit mehreren Audioabschnitten gleichzeitig)
+        try:
+            from faster_whisper import BatchedInferencePipeline
+            if self._batched is None:
+                self._batched = BatchedInferencePipeline(model=model)
+            segments, info = self._batched.transcribe(path, language=language,
+                                                      batch_size=8)
+        except Exception:
+            segments, info = model.transcribe(path, language=language,
+                                              vad_filter=True)
         parts = []
         for s in segments:
             parts.append(s.text.strip())
@@ -432,6 +443,16 @@ def mux_video_with_audio(video_path, audio_wav, out_path):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"ffmpeg-Fehler: {result.stderr[-400:]}")
+    return out_path
+
+
+def convert_audio(wav_path, out_path):
+    """WAV in das Format der Zielendung konvertieren (MP3, M4A, ...)."""
+    import subprocess
+    cmd = [_ffmpeg_exe(), "-y", "-i", wav_path, out_path]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Konvertierung fehlgeschlagen: {result.stderr[-300:]}")
     return out_path
 
 

@@ -265,11 +265,12 @@ class App(tk.Tk):
                 self.cb_video_out.current(0)
         self.cb_video_out.pack(side="left")
         self.cb_video_out.bind("<<ComboboxSelected>>", self._video_out_changed)
+        ttk.Button(row3b, text="🔔 Testton", command=self._testton).pack(side="left", padx=8)
 
         row4 = ttk.Frame(f); row4.pack(fill="x", pady=(0, 4))
         ttk.Button(row4, text="③ 💾 Video mit neuer Tonspur speichern…", style="Accent.TButton",
                    command=self._save_video).pack(side="left")
-        ttk.Button(row4, text="Als WAV speichern…", command=self._save_translation).pack(side="left", padx=8)
+        ttk.Button(row4, text="Audio speichern (MP3/WAV/M4A)…", command=self._save_translation).pack(side="left", padx=8)
         ttk.Button(row4, text="Text speichern…", command=self._save_text).pack(side="left")
         self._tick_player()
 
@@ -367,6 +368,22 @@ class App(tk.Tk):
                 self._set_status(f"Fehler bei der Vertonung: {e}")
         threading.Thread(target=worker, daemon=True).start()
 
+    def _testton(self):
+        """Piepton auf das gewählte Gerät — prüft den Tonweg ohne KI."""
+        auswahl = self.cb_video_out.get()
+        idx = int(auswahl.split(":")[0]) if ":" in auswahl else None
+
+        def worker():
+            try:
+                weg = audio_mod.spiele_testton(idx)
+                self._set_status(f"🔔 Testton abgespielt über: {weg}. "
+                                 f"Nichts gehört? Lautstärke/Gerät in Windows prüfen.")
+            except Exception as e:
+                self.after(0, lambda: messagebox.showerror(
+                    APP_TITLE, f"Kein Tonweg funktioniert:\n{e}\n\n"
+                    "Bitte Windows-Lautstärkemixer und Standardgerät prüfen."))
+        threading.Thread(target=worker, daemon=True).start()
+
     def _video_out_changed(self, event=None):
         """Wiedergabegeraet fuer den Video-Tab wechseln."""
         auswahl = self.cb_video_out.get()
@@ -396,8 +413,13 @@ class App(tk.Tk):
         if self.player.playing:
             self.player.pause()
         else:
-            self.player.play()
-            self._set_status(f"Wiedergabe läuft — über: {self._aktives_ausgabegeraet()}")
+            try:
+                self.player.play()
+                self._set_status(f"Wiedergabe läuft — über: {self._aktives_ausgabegeraet()}")
+            except Exception as e:
+                messagebox.showerror(APP_TITLE,
+                    f"Wiedergabe fehlgeschlagen:\n{e}\n\n"
+                    "Tipp: '🔔 Testton' probieren und ggf. anderes Ausgabegerät wählen.")
 
     def _player_stop(self):
         self.player.pause()
@@ -428,8 +450,10 @@ class App(tk.Tk):
         if not self.video_path.get():
             messagebox.showinfo(APP_TITLE, "Kein Originalvideo gewählt.")
             return
-        dest = filedialog.asksaveasfilename(defaultextension=".mp4",
-                                            filetypes=[("MP4-Video", "*.mp4")])
+        dest = filedialog.asksaveasfilename(
+            defaultextension=".mp4",
+            filetypes=[("MP4-Video", "*.mp4"), ("MKV-Video", "*.mkv"),
+                       ("MOV-Video", "*.mov")])
         if not dest:
             return
         def worker():
@@ -447,13 +471,27 @@ class App(tk.Tk):
     def _save_translation(self):
         if not self._audio_ist_aktuell():
             return
-        dest = filedialog.asksaveasfilename(defaultextension=".wav",
-                                            filetypes=[("WAV-Audio", "*.wav")])
+        dest = filedialog.asksaveasfilename(
+            defaultextension=".mp3",
+            filetypes=[("MP3-Audio", "*.mp3"), ("WAV-Audio", "*.wav"),
+                       ("M4A-Audio", "*.m4a"), ("OGG-Audio", "*.ogg")])
         if not dest:
             return
-        wav, rate = self.current_audio
-        engine.save_wav(dest, wav, rate)
-        self._set_status(f"Gespeichert: {dest}")
+
+        def worker():
+            try:
+                wav, rate = self.current_audio
+                if dest.lower().endswith(".wav"):
+                    engine.save_wav(dest, wav, rate)
+                else:
+                    import tempfile
+                    tmp = os.path.join(tempfile.gettempdir(), "uebersetzer_export.wav")
+                    engine.save_wav(tmp, wav, rate)
+                    engine.convert_audio(tmp, dest)
+                self._set_status(f"Gespeichert: {dest}")
+            except Exception as e:
+                self._set_status(f"Fehler beim Speichern: {e}")
+        threading.Thread(target=worker, daemon=True).start()
 
     def _save_text(self):
         text = self.txt_trans.get("1.0", "end").strip()

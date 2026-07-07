@@ -301,6 +301,17 @@ def audio(job_id: str):
                         filename="uebersetzung.wav")
 
 
+@app.get("/api/mp3/{job_id}")
+def audio_mp3(job_id: str):
+    wav = os.path.join(JOBS_DIR, f"{job_id}.wav")
+    mp3 = os.path.join(JOBS_DIR, f"{job_id}.mp3")
+    if not os.path.exists(wav):
+        return JSONResponse({"fehler": "nicht fertig"}, status_code=404)
+    if not os.path.exists(mp3) or os.path.getmtime(mp3) < os.path.getmtime(wav):
+        engine.convert_audio(wav, mp3)
+    return FileResponse(mp3, media_type="audio/mpeg", filename="uebersetzung.mp3")
+
+
 @app.get("/api/video/{job_id}")
 def video(job_id: str):
     path = os.path.join(JOBS_DIR, f"{job_id}.mp4")
