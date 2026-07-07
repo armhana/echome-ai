@@ -83,12 +83,12 @@ _repariere_unterbrochene_jobs()
 
 
 def _warmup():
-    """Modelle beim Serverstart in den Speicher laden — der erste Auftrag
-    zahlt sonst zusaetzlich den kompletten Modell-Load (5-30 s)."""
+    """Whisper beim Serverstart laden — der erste Auftrag zahlt sonst die
+    Ladezeit obendrauf. XTTS bewusst NICHT vorwaermen: torch parallel zu
+    ctranslate2 provoziert den OpenMP-Konflikt (haengende Inferenz); es
+    laedt beim ersten Eigene-Stimme-Auftrag unter dem globalen Lock."""
     try:
         stt._ensure_model()
-        if clone.available():
-            clone._ensure_model()
     except Exception:
         pass  # Warmup darf nie den Serverstart verhindern
 

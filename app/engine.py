@@ -15,12 +15,21 @@ try:
 except ImportError:
     pass
 
+# ctranslate2 (Whisper/Argos) und torch (XTTS) bringen je eine eigene
+# OpenMP-Laufzeit mit; laufen sie gleichzeitig, verklemmt sich die Inferenz
+# (beobachtet: encode() haengt endlos). Daher: Schutzvariable setzen und
+# ALLE schweren KI-Operationen ueber EIN globales Lock serialisieren.
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import numpy as np
 
 MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
 SAMPLE_RATE = 16000  # Whisper erwartet 16 kHz mono
+
+# Serialisiert Whisper, Argos und XTTS (siehe OpenMP-Hinweis oben).
+HEAVY_LOCK = threading.RLock()
 
 
 class SpeechToText:
@@ -34,22 +43,27 @@ class SpeechToText:
         self.model_size = model_size
         self.beam_size = beam_size
         self._model = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def _ensure_model(self):
-        if self._model is None:
-            from faster_whisper import WhisperModel
-            self._model = WhisperModel(
-                self.model_size, device="cpu", compute_type="int8",
-                cpu_threads=os.cpu_count() or 4,  # Standard waeren nur 4 Threads
-                download_root=os.path.join(MODELS_DIR, "whisper"),
-            )
+        # Unter Lock: Warmup- und Auftrags-Thread duerfen nicht gleichzeitig
+        # je ein Modell bauen (doppelter RAM + OpenMP-Thread-Kollision).
+        with self._lock:
+            if self._model is None:
+                from faster_whisper import WhisperModel
+                self._model = WhisperModel(
+                    self.model_size, device="cpu", compute_type="int8",
+                    # mehr als ~8 Threads bringt kaum Tempo, kollidiert aber
+                    # mit torch/ffmpeg, die parallel laufen
+                    cpu_threads=min(8, os.cpu_count() or 4),
+                    download_root=os.path.join(MODELS_DIR, "whisper"),
+                )
         return self._model
 
     def transcribe(self, audio: np.ndarray, language=None):
         """audio: float32 mono 16 kHz. Gibt (text, erkannte_sprache) zurueck."""
         model = self._ensure_model()
-        with self._lock:
+        with HEAVY_LOCK, self._lock:
             segments, info = model.transcribe(
                 audio, language=language, vad_filter=True,
                 beam_size=self.beam_size,
@@ -60,7 +74,7 @@ class SpeechToText:
     def transcribe_file(self, path, language=None, on_segment=None):
         """Transkribiert eine Video-/Audiodatei (Dekodierung uebernimmt PyAV)."""
         model = self._ensure_model()
-        with self._lock:
+        with HEAVY_LOCK, self._lock:
             segments, info = model.transcribe(path, language=language, vad_filter=True)
             parts = []
             for s in segments:
@@ -109,7 +123,8 @@ class Translator:
         if not self._ensure_pair(src, tgt):
             raise RuntimeError(f"Kein Uebersetzungspaket fuer {src}->{tgt} verfuegbar")
         import argostranslate.translate
-        return argostranslate.translate.translate(text, src, tgt)
+        with HEAVY_LOCK:
+            return argostranslate.translate.translate(text, src, tgt)
 
 
 # Piper-Stimmen je Sprache (werden bei Bedarf von HuggingFace geladen, danach offline)
@@ -237,7 +252,7 @@ class VoiceCloneTTS:
 
     def __init__(self):
         self._tts = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def available(self):
         try:
@@ -247,10 +262,14 @@ class VoiceCloneTTS:
             return False
 
     def _ensure_model(self):
+        with self._lock:
+            return self._ensure_model_locked()
+
+    def _ensure_model_locked(self):
         if self._tts is None:
             os.environ.setdefault("COQUI_TOS_AGREED", "1")
             import torch
-            torch.set_num_threads(os.cpu_count() or 4)
+            torch.set_num_threads(min(8, os.cpu_count() or 4))
             # torchaudio>=2.9 laedt Audio ueber torchcodec, dessen DLLs unter
             # Windows unzuverlaessig laden. Wir brauchen nur WAV-Referenzen:
             # torchaudio.load auf soundfile umleiten.
@@ -269,7 +288,7 @@ class VoiceCloneTTS:
 
     def synthesize(self, text, lang, speaker_wav_path):
         """Gibt (float32-Array, Samplerate) in der geklonten Stimme zurueck."""
-        with self._lock:
+        with HEAVY_LOCK, self._lock:
             tts = self._ensure_model()
             wav = tts.tts(text=text, speaker_wav=speaker_wav_path, language=lang)
         return np.asarray(wav, dtype=np.float32), 24000  # XTTS liefert 24 kHz
