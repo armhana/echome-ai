@@ -6,25 +6,27 @@ mehr nötig.
 
 ## Plattform-Übersicht
 
-**Als Server** (rechnet die KI, stellt die Web-Oberfläche bereit):
+**Als Server** (rechnet die KI, stellt die Web-Oberfläche bereit) —
+je Plattform gibt es eine eigene Anleitung:
 
-| Plattform | Einrichtung | Getestet |
+| Plattform | Anleitung | Getestet |
 |---|---|---|
-| Windows | `Installieren.bat`, dann `Start-Server.bat` | ✅ |
-| Linux (PC/Server) | `bash linux/installieren-linux.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
-| Raspberry Pi 4/5 | `bash pi/installieren-pi.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
-| Mac | `git clone https://github.com/armhana/translate.git && cd translate && bash mac/installieren-mac.sh` — Details: [mac/README_MAC.md](mac/README_MAC.md) | ⚠️ ungetestet |
+| Windows | [windows/README_WINDOWS.md](windows/README_WINDOWS.md) | ✅ |
+| Linux (PC/Server) | [linux/README_LINUX.md](linux/README_LINUX.md) | ⚠️ ungetestet |
+| Raspberry Pi 4/5 | [pi/README_PI.md](pi/README_PI.md) | ⚠️ ungetestet |
+| Mac | [mac/README_MAC.md](mac/README_MAC.md) | ⚠️ ungetestet |
 
 **Als App auf dem Endgerät** (bedient den Server im selben Netz):
+Schritt für Schritt in **[APP-INSTALLATION.md](APP-INSTALLATION.md)**
+(iPhone/iPad, Android, Windows/Mac/Linux-Browser).
 
-| Gerät | Installation als App |
+Nativ statt Browser:
+
+| Gerät | Weg |
 |---|---|
-| iPhone/iPad | Safari → `http://<server>:8710` → Teilen → *Zum Home-Bildschirm* |
-| Android | Chrome → Adresse öffnen → Menü → *App installieren* |
-| Windows/Linux/Mac | Chrome oder Edge → Adresse öffnen → *App installieren* (Symbol in der Adressleiste) |
-| Windows (nativ) | Desktop-App über `Start.bat` (inkl. Live-Modus) |
-| Linux/Mac (nativ) | Desktop-App: `venv/bin/python app/main.py` ⚠️ ungetestet |
-| iOS (nativ) | Swift-Starterprojekt unter `ios/` (braucht Mac + Xcode) ⚠️ ungetestet |
+| Windows | Desktop-App über `Start.bat` (inkl. Live-Modus) |
+| Linux/Mac | Desktop-App: `venv/bin/python app/main.py` ⚠️ ungetestet |
+| iOS | Swift-Projekt unter `ios/`, Bau-Anleitung: [ios/ANLEITUNG-MAC-BUILD.md](ios/ANLEITUNG-MAC-BUILD.md) ⚠️ ungetestet |
 
 ## Installation (neuer Rechner)
 
