@@ -346,6 +346,8 @@ if __name__ == "__main__":
     print("  (Gerät muss im selben WLAN sein — wichtig: http, nicht https)")
     print("=" * 60)
     try:
+        import sys
+        sys.stdout.reconfigure(encoding="utf-8")  # Blockzeichen in cp1252-Konsole
         import qrcode
         qr = qrcode.QRCode(border=1)
         qr.add_data(url)

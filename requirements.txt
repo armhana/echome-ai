@@ -16,3 +16,4 @@ torchaudio
 soundfile
 # Video-Export (Tonspur ersetzen)
 imageio-ffmpeg
+qrcode
