@@ -244,8 +244,9 @@ class App(tk.Tk):
         ttk.Label(row3, textvariable=self.pos_label, width=13,
                   foreground="#6b7280").pack(side="left", padx=8)
 
-        ttk.Label(row3, text="🔊 Ausgabe:").pack(side="left", padx=(10, 4))
-        self.cb_video_out = ttk.Combobox(row3, state="readonly", width=44)
+        row3b = ttk.Frame(f); row3b.pack(fill="x", pady=(0, 8))
+        ttk.Label(row3b, text="🔊 Wiedergabe über:").pack(side="left", padx=(0, 6))
+        self.cb_video_out = ttk.Combobox(row3b, state="readonly", width=52)
         self._video_outputs = audio_mod.list_output_devices()
         self.cb_video_out["values"] = [f"{i}: {n}" for i, n in self._video_outputs]
         # Windows-Standardgeraet per Namensvergleich vorwaehlen (der MME-Name
