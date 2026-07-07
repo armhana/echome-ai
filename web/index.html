@@ -169,6 +169,7 @@ document.getElementById("los").onclick = async () => {
 
 let aktuellerJob = null;
 let gesprochenerText = null;  // Text der zuletzt erzeugten Vertonung
+let startAnteil = null;       // 0..1: Wiedergabe nach Neu-Vertonung ab Cursorstelle
 
 // Laufenden/fertigen Auftrag nach Seiten-Reload wiederfinden — wichtig,
 // weil lange Videos mit eigener Stimme bis zu einer Stunde rechnen und
@@ -203,6 +204,13 @@ async function warte(id){
       gesprochenerText = j.uebersetzung;
       document.getElementById("textHinweis").classList.add("hidden");
       audio.src = `/api/audio/${id}?v=${v}`;
+      if (startAnteil !== null) {
+        // Nach Korrektur: an der Cursorstelle fortsetzen (2 s Vorlauf)
+        const anteil = startAnteil; startAnteil = null;
+        audio.addEventListener("loadedmetadata", () => {
+          audio.currentTime = Math.max(0, audio.duration * anteil - 2);
+        }, { once: true });
+      }
       document.getElementById("dlVideo").href = `/api/video/${id}?v=${v}`;
       document.getElementById("dlAudio").href = `/api/audio/${id}?v=${v}`;
       document.getElementById("ergebnis").classList.remove("hidden");
@@ -220,8 +228,11 @@ async function warte(id){
 }
 
 document.getElementById("neuVertonen").onclick = async () => {
-  const text = document.getElementById("uebersetzung").value.trim();
+  const ta = document.getElementById("uebersetzung");
+  const text = ta.value.trim();
   if (!aktuellerJob || !text) return;
+  // Cursorstelle merken: dort soll die Wiedergabe nachher weiterlaufen
+  startAnteil = text.length ? Math.min(1, ta.selectionStart / text.length) : 0;
   const fd = new FormData();
   fd.append("text", text);
   statusEl.className = "status";

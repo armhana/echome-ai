@@ -284,8 +284,12 @@ class App(tk.Tk):
         finally:
             self.btn_video_go.config(state="normal")
 
-    def _make_audio(self, autoplay=False):
-        """Vertonung erzeugen: eigene Stimme (geklont) oder neutrale Stimme."""
+    def _make_audio(self, autoplay=False, start_fraction=None):
+        """Vertonung erzeugen: eigene Stimme (geklont) oder neutrale Stimme.
+
+        start_fraction (0..1): Wiedergabe nach dem Erzeugen an dieser
+        Textstelle beginnen (z.B. Cursorposition nach einer Korrektur).
+        """
         text = self.txt_trans.get("1.0", "end").strip()
         if not text:
             messagebox.showwarning(APP_TITLE, "Keine Übersetzung vorhanden — erst Schritt 'Transkribieren + Übersetzen' ausführen.")
@@ -316,9 +320,12 @@ class App(tk.Tk):
                 self.current_audio = (wav, rate)
                 self.current_audio_text = text  # merken, welcher Text gesprochen wurde
                 self.player.load(wav, rate)
+                if start_fraction:
+                    # An der Korrekturstelle fortsetzen (2 s Vorlauf)
+                    self.player.pos = max(0, int(len(wav) * start_fraction - 2 * rate))
                 if autoplay:
                     self.player.play()
-                    self._set_status("Vertonung (neu) erzeugt — Wiedergabe läuft.")
+                    self._set_status("Vertonung (neu) erzeugt — Wiedergabe läuft ab der Korrekturstelle.")
                 else:
                     self._set_status("Vertonung fertig — mit ▶ Play anhören oder Video/WAV speichern.")
             except Exception as e:
@@ -330,7 +337,10 @@ class App(tk.Tk):
         # Text wurde nach der letzten Vertonung korrigiert? Dann automatisch
         # neu vertonen, damit nie eine veraltete Fassung abgespielt wird.
         if text and text != getattr(self, "current_audio_text", None):
-            self._make_audio(autoplay=True)
+            # Cursorposition im Text -> Wiedergabe startet an der Korrekturstelle
+            cursor_chars = len(self.txt_trans.get("1.0", tk.INSERT))
+            fraction = min(1.0, cursor_chars / len(text)) if text else 0
+            self._make_audio(autoplay=True, start_fraction=fraction)
             return
         if self.current_audio is None:
             messagebox.showinfo(APP_TITLE, "Erst 'Vertonung erzeugen' ausführen.")
