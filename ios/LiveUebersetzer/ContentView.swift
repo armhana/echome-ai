@@ -30,6 +30,7 @@ struct ContentView: View {
     @State private var videoURL: URL?
     @State private var transkript = ""
     @State private var uebersetzung = ""
+    @State private var textAuswahl: TextSelection? = nil  // Cursor im Übersetzungsfeld
     @State private var status = "Bereit."
     @State private var arbeitet = false
 
@@ -77,11 +78,13 @@ struct ContentView: View {
                     }
                 }
 
-                Section("3 · Übersetzung") {
+                Section("3 · Übersetzung — hier korrigieren; Play startet ab dem Cursor") {
                     if uebersetzung.isEmpty {
                         Text("—").foregroundStyle(.tertiary)
                     } else {
-                        Text(uebersetzung).font(.callout)
+                        TextEditor(text: $uebersetzung, selection: $textAuswahl)
+                            .font(.callout)
+                            .frame(minHeight: 110)
                     }
                 }
 
@@ -92,9 +95,16 @@ struct ContentView: View {
                             Image(systemName: "gobackward.10")
                         }
                         Button {
+                            // Cursorposition -> Zeichen-Offset im Text
+                            var start = 0
+                            if case .selection(let bereich) = textAuswahl?.indices {
+                                start = uebersetzung.distance(from: uebersetzung.startIndex,
+                                                              to: bereich.lowerBound)
+                            }
                             sprecher.playPause(text: uebersetzung,
                                                sprache: zielsprache,
-                                               eigeneStimme: eigeneStimme)
+                                               eigeneStimme: eigeneStimme,
+                                               startZeichen: start)
                         } label: {
                             Image(systemName: sprecher.spielt ? "pause.circle.fill"
                                                               : "play.circle.fill")

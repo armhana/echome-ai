@@ -34,7 +34,8 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         try? session.setActive(true)
     }
 
-    func playPause(text: String, sprache: String, eigeneStimme: Bool) {
+    func playPause(text: String, sprache: String, eigeneStimme: Bool,
+                   startZeichen: Int = 0) {
         if synth.isSpeaking && !synth.isPaused {
             synth.pauseSpeaking(at: .word)
             spielt = false
@@ -52,7 +53,13 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         saetze = text.split(whereSeparator: { ".!?".contains($0) })
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
+        // Wiedergabe beim Satz starten, in dem der Cursor steht
         index = 0
+        var summe = 0
+        for (i, satz) in saetze.enumerated() {
+            summe += satz.count + 1
+            if startZeichen < summe { index = i; break }
+        }
         sprichAktuellenSatz()
     }
 
@@ -85,13 +92,18 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     private func passendeStimme() -> AVSpeechSynthesisVoice? {
         let alle = AVSpeechSynthesisVoice.speechVoices()
 
-        // Personal Voice NUR in ihrer Trainingssprache verwenden — auf
-        // Fremdsprachen angewendet klingt sie stark akzentbehaftet.
+        // Wunsch des Nutzers: Personal Voice IMMER verwenden, in jeder
+        // Zielsprache (fremdsprachig klingt die Aussprache dann wie der
+        // Sprecher selbst in dieser Sprache — bewusste Entscheidung).
         if eigeneStimme,
-           let pv = alle.first(where: { $0.voiceTraits.contains(.isPersonalVoice)
-                                        && $0.language.hasPrefix(sprache) }) {
-            stimmenInfo = "Es spricht: deine Personal Voice"
+           let pv = alle.first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+            stimmenInfo = pv.language.hasPrefix(sprache)
+                ? "Es spricht: deine Personal Voice"
+                : "Es spricht: deine Personal Voice (fremdsprachiger Text — Aussprache trägt deine Sprechweise)"
             return pv
+        }
+        if eigeneStimme {
+            stimmenInfo = "Personal Voice nicht verfügbar — Einstellungen → Bedienungshilfen → Personal Voice prüfen"
         }
 
         // Sonst: beste NATIVE Stimme der Zielsprache (Premium > Enhanced >
