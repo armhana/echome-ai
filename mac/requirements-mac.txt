@@ -1,0 +1,19 @@
+# Mac (Apple Silicon oder Intel), Python 3.12 — volle Desktop-App inkl. Stimmklon
+faster-whisper
+argostranslate
+sounddevice
+soundcard
+numpy
+piper-tts
+truststore
+soundfile
+# Stimmen-Klonen (eigene Stimme, XTTS-v2 — Lizenz: nur nicht-kommerzielle Nutzung)
+coqui-tts[codec]
+transformers<5
+torchaudio
+# Video-Export und Web-Server
+imageio-ffmpeg
+fastapi
+uvicorn[standard]
+python-multipart
+qrcode
