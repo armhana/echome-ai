@@ -1,4 +1,4 @@
-# Live-Übersetzer auf Windows
+# EchoMe auf Windows
 
 Windows ist die vollständigste Plattform: Desktop-App **mit Live-Modus**
 (Gespräche/Anrufe übersetzen) und Stimmklon (XTTS) **plus** Web-Server für

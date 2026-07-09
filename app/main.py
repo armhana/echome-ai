@@ -1,4 +1,4 @@
-"""Live-Übersetzer — Stand-alone-App (Windows/Linux).
+"""EchoMe — Stand-alone-App (Windows/Linux).
 
 Drei Modi:
   1. Video/Datei:   Videodatei transkribieren, übersetzen, vertonen, als WAV speichern.
@@ -21,7 +21,7 @@ from tkinter import filedialog, messagebox, ttk
 import audio as audio_mod
 import engine
 
-APP_TITLE = "Live-Übersetzer (lokal & offline)"
+APP_TITLE = "EchoMe (lokal & offline)"
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                            "einstellungen.json")
 
@@ -169,7 +169,7 @@ class App(tk.Tk):
     def _build_ui(self):
         header = ttk.Frame(self)
         header.pack(fill="x", padx=16, pady=(14, 4))
-        ttk.Label(header, text="🌐 Live-Übersetzer",
+        ttk.Label(header, text="🌐 EchoMe",
                   font=("Segoe UI Semibold", 17)).pack(side="left")
         ttk.Label(header, text="   lokal · offline · DSGVO-konform",
                   font=("Segoe UI", 10), foreground="#6b7280").pack(side="left", pady=(6, 0))

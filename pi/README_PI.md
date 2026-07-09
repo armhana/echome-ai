@@ -1,4 +1,4 @@
-# Live-Übersetzer auf dem Raspberry Pi 4 (8 GB)
+# EchoMe auf dem Raspberry Pi 4 (8 GB)
 
 Der Pi übernimmt die Server-Rolle: Er läuft dauerhaft und lautlos, alle Geräte
 im Heimnetz (iPhone/Safari, Android/Chrome, PC-Browser) nutzen dieselbe

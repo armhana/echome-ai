@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Live-Uebersetzer auf dem Mac (Apple Silicon oder Intel)
+#  EchoMe auf dem Mac (Apple Silicon oder Intel)
 #  Richtet die VOLLE Desktop-App (wie unter Windows) UND den
 #  optionalen Web-Server ein. Aufruf im geklonten Repo:
 #      bash mac/installieren-mac.sh

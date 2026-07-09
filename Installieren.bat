@@ -1,6 +1,6 @@
 @echo off
 rem ============================================================
-rem  Live-Uebersetzer: Einmalige Einrichtung auf einem neuen PC
+rem  EchoMe: Einmalige Einrichtung auf einem neuen PC
 rem  Voraussetzung: Python 3.12 (python.org, "Add to PATH" aktivieren)
 rem  Erzeugt venv/, laedt Bibliotheken, FFmpeg-DLLs und das
 rem  Stimmklon-Modell. Dauer je nach Netz 15-60 Minuten.

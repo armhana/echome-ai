@@ -133,7 +133,7 @@ struct ContentView: View {
 
                 Section { Text(status).font(.footnote).foregroundStyle(.secondary) }
             }
-            .navigationTitle("Live-Übersetzer")
+            .navigationTitle("EchoMe")
         }
         .onChange(of: videoItem) { ladeVideo() }
         // Apple-Übersetzungs-Framework: Session wird bereitgestellt, sobald

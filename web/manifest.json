@@ -1,6 +1,6 @@
 {
-  "name": "Live-Übersetzer",
-  "short_name": "Übersetzer",
+  "name": "EchoMe",
+  "short_name": "EchoMe",
   "description": "Lokale Video-Übersetzung mit eigener Stimme (KI läuft auf dem eigenen PC)",
   "start_url": "/",
   "display": "standalone",

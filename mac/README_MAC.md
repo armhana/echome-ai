@@ -1,4 +1,4 @@
-# Live-Übersetzer auf dem Mac (MacBook / iMac)
+# EchoMe auf dem Mac (MacBook / iMac)
 
 Der Mac ist **vollständig eigenständig** — wie der Windows-PC: eigene
 Desktop-App (Video übersetzen, eigene Stimme per XTTS-Stimmklon,

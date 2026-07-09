@@ -25,7 +25,7 @@ JOBS_DIR = os.path.join(BASE, "jobs")
 WEB_DIR = os.path.join(BASE, "web")
 os.makedirs(JOBS_DIR, exist_ok=True)
 
-app = FastAPI(title="Live-Übersetzer")
+app = FastAPI(title="EchoMe")
 
 # Auf schwacher Hardware (z.B. Raspberry Pi): WHISPER_MODELL=base setzen
 stt = engine.SpeechToText(model_size=os.environ.get("WHISPER_MODELL", "small"))
@@ -341,7 +341,7 @@ if __name__ == "__main__":
     url = f"http://{lokale_ip()}:8710"
     print()
     print("=" * 60)
-    print("  Live-Übersetzer läuft. Auf Handy/Browser öffnen:")
+    print("  EchoMe läuft. Auf Handy/Browser öffnen:")
     print(f"  {url}")
     print("  (Gerät muss im selben WLAN sein — wichtig: http, nicht https)")
     print("=" * 60)

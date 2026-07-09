@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Live-Uebersetzer auf Linux (Debian/Ubuntu, x86_64 oder ARM64)
+#  EchoMe auf Linux (Debian/Ubuntu, x86_64 oder ARM64)
 #  Richtet den Web-Server samt Autostart-Dienst ein.
 #  Aufruf:   bash linux/installieren-linux.sh   (im geklonten Repo)
 #  Danach:   http://<IP>:8710 von jedem Geraet im Netz
@@ -31,7 +31,7 @@ EOF
 echo "[4/4] Autostart-Dienst einrichten..."
 sudo tee /etc/systemd/system/uebersetzer.service >/dev/null <<EOF
 [Unit]
-Description=Live-Uebersetzer Web-Server
+Description=EchoMe Web-Server
 After=network-online.target
 
 [Service]

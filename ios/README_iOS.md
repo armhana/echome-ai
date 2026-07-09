@@ -1,4 +1,4 @@
-# iOS-Starterprojekt „Live-Übersetzer"
+# iOS-Starterprojekt „EchoMe"
 
 **Status: ungetestetes Grundgerüst.** Dieser Code wurde auf einem Windows-PC
 geschrieben und konnte dort weder kompiliert noch ausgeführt werden. Er dient

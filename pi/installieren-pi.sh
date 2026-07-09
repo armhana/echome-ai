@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  Live-Uebersetzer auf dem Raspberry Pi einrichten
+#  EchoMe auf dem Raspberry Pi einrichten
 #  Getestet gedacht fuer: Pi 4 Model B (8 GB), Raspberry Pi OS 64-bit
 #  Aufruf:   bash pi/installieren-pi.sh   (im geklonten Repo-Ordner)
 # ============================================================
@@ -28,7 +28,7 @@ EOF
 echo "[4/4] Autostart-Dienst einrichten (startet bei jedem Boot)..."
 sudo tee /etc/systemd/system/uebersetzer.service >/dev/null <<EOF
 [Unit]
-Description=Live-Uebersetzer Web-Server
+Description=EchoMe Web-Server
 After=network-online.target
 
 [Service]

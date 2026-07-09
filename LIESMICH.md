@@ -1,4 +1,4 @@
-# Live-Übersetzer (lokal & offline)
+# EchoMe (lokal & offline)
 
 Stand-alone-Übersetzungssoftware in Python. Alle KI-Modelle laufen lokal auf dem
 eigenen Gerät — nach dem einmaligen Modell-Download ist keine Internetverbindung

@@ -1,4 +1,4 @@
-# Live-Übersetzer auf Linux (Debian/Ubuntu)
+# EchoMe auf Linux (Debian/Ubuntu)
 
 Der Linux-Rechner übernimmt die Server-Rolle: Er rechnet die KI, alle
 Geräte im Netz (iPhone, Android, PC) bedienen die Web-Oberfläche im
