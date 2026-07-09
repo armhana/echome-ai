@@ -33,9 +33,9 @@ ca. 45–60 Minuten (inkl. Downloads).
      Language: **Swift** → Next → Speicherort wählen → Create
 3. **Unseren Code hineinnehmen**:
    - Dieses Repository laden: Terminal öffnen und
-     `git clone https://github.com/armhana/translate-ai.git`
+     `git clone https://github.com/armhana/echome-ai.git`
      (oder auf GitHub: *Code → Download ZIP*)
-   - Im Finder den Ordner `translate-ai/ios/LiveUebersetzer/` öffnen und
+   - Im Finder den Ordner `echome-ai/ios/LiveUebersetzer/` öffnen und
      **alle fünf .swift-Dateien** in den Xcode-Projektnavigator ziehen
      (linke Spalte, auf den gelben Ordner `LiveUebersetzer`).
      Im Dialog: „Copy items if needed" ✓ → Finish.

@@ -14,8 +14,8 @@ Web-Oberfläche. Die KI läuft vollständig lokal auf dem Pi — keine Cloud.
 ## Installation
 
 ```bash
-git clone https://github.com/armhana/translate-ai.git
-cd translate-ai
+git clone https://github.com/armhana/echome-ai.git
+cd echome-ai
 bash pi/installieren-pi.sh
 ```
 

@@ -8,8 +8,8 @@ Browser. Alles läuft **lokal**; Inhalte verlassen das eigene Netz nicht
 ## Installation (einmalig)
 
 ```bash
-git clone https://github.com/armhana/translate-ai.git
-cd translate-ai
+git clone https://github.com/armhana/echome-ai.git
+cd echome-ai
 bash linux/installieren-linux.sh
 ```
 

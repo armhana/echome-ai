@@ -11,8 +11,8 @@ Voraussetzung: [Homebrew](https://brew.sh) ist installiert.
 Dann im Terminal:
 
 ```bash
-git clone https://github.com/armhana/translate-ai.git
-cd translate-ai
+git clone https://github.com/armhana/echome-ai.git
+cd echome-ai
 bash mac/installieren-mac.sh
 ```
 
