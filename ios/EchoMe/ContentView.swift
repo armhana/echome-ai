@@ -7,6 +7,9 @@ import SwiftUI
 import PhotosUI
 import Translation
 import UniformTypeIdentifiers
+#if canImport(FoundationModels)
+import FoundationModels
+#endif
 
 /// Videos aus der Mediathek als DATEI übernehmen (Apples empfohlener Weg).
 struct FilmDatei: Transferable {
@@ -101,6 +104,12 @@ struct ContentView: View {
                         TextEditor(text: $uebersetzung, selection: $textAuswahl)
                             .font(.callout)
                             .frame(minHeight: 110)
+                        Button("🪄 Eloquent umformulieren (Apple Intelligence)") {
+                            eloquentUmformulieren()
+                        }
+                        Text("Alternativ auf jedem iPhone mit Apple Intelligence: Text " +
+                             "markieren → Schreibwerkzeuge → Umformulieren.")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
 
@@ -298,6 +307,37 @@ struct ContentView: View {
                 source: quelle,
                 target: Locale.Language(identifier: zielsprache))
         }
+    }
+
+    /// Eloquente Umformulierung mit Apples On-Device-Sprachmodell (iOS 26+).
+    private func eloquentUmformulieren() {
+        #if canImport(FoundationModels)
+        if #available(iOS 26.0, *) {
+            guard SystemLanguageModel.default.availability == .available else {
+                status = "Apple Intelligence ist auf diesem Gerät nicht verfügbar — " +
+                         "stattdessen: Text markieren → Schreibwerkzeuge → Umformulieren."
+                return
+            }
+            status = "KI formuliert um…"
+            let eingabe = uebersetzung
+            Task {
+                do {
+                    let session = LanguageModelSession(instructions:
+                        "Du bist ein professioneller Lektor. Formuliere den Text eloquent, " +
+                        "flüssig und stilistisch sauber um — in derselben Sprache. Behalte " +
+                        "Inhalt, Bedeutung und Aussageform exakt bei. Antworte NUR mit dem " +
+                        "umformulierten Text.")
+                    let antwort = try await session.respond(to: eingabe)
+                    uebersetzung = antwort.content
+                    status = "Eloquent umformuliert — bitte prüfen, dann ▶ anhören."
+                } catch {
+                    status = "Umformulierung fehlgeschlagen: \(error.localizedDescription)"
+                }
+            }
+            return
+        }
+        #endif
+        status = "Braucht iOS 26 — alternativ: Text markieren → Schreibwerkzeuge → Umformulieren."
     }
 
     private func starteLive() {
